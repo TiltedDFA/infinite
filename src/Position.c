@@ -10,6 +10,8 @@ inline Position position_create(void)
 {
     Position p;
     p.state_info = (StateInfo*) malloc(sizeof(StateInfo));
+    board_init(&(p.board));
+
     return p;
 }
 void position_destroy(Position* p)
@@ -27,20 +29,42 @@ void position_clear(Position* p)
     p->full_moves = 0;
 }
 const PieceType CHAR_TO_PIECE[] = {
-        ['P'] = wp,
-        ['N'] = wn,
-        ['B'] = wb,
-        ['R'] = wr,
-        ['Q'] = wq,
-        ['K'] = wk,
-        ['p'] = bp,
-        ['n'] = bn,
-        ['b'] = bb,
-        ['r'] = br,
-        ['q'] = bq,
-        ['k'] = bk,
+        ['P'] = pt_wp,
+        ['N'] = pt_wn,
+        ['B'] = pt_wb,
+        ['R'] = pt_wr,
+        ['Q'] = pt_wq,
+        ['K'] = pt_wk,
+        ['p'] = pt_bp,
+        ['n'] = pt_bn,
+        ['b'] = pt_bb,
+        ['r'] = pt_br,
+        ['q'] = pt_bq,
+        ['k'] = pt_bk,
 };
+ZobKey position_make_zob_key(Position* pos)
+{
+    ZobKey ret = 0ULL;
+    for (PieceType t = pt_wp; t <= pt_wq; ++t) {
+        BitBoard pieces = board_get_pieces(&pos->board, t);
+        while (pieces) {
+            ret ^= ZOBRIST_PIECES[t][FindLSB(pieces)];
+            pieces = PopLSB(pieces);
+        }
+    }
+    for (PieceType t = pt_bp; t <= pt_bq; ++t) {
+        BitBoard pieces = board_get_pieces(&pos->board, t);
+        while (pieces) {
+            ret ^= ZOBRIST_PIECES[t - 2][FindLSB(pieces)];
+            pieces = PopLSB(pieces);
+        }
+    }
+    if(pos->state_info->en_passant_sq)
+        ret ^= ZOBRIST_EP_KEYS[pos->state_info->en_passant_sq];
 
+    ret ^= ZOBRIST_SIDE_KEY * pos->whites_turn;
+    return ret;
+}
 INLINE PieceType CharToPieceType(const char c)
 {
     assert((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));

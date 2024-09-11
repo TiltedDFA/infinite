@@ -15,4 +15,8 @@ add_executable(infinite
         src/Position.h
         src/Zobrist.h
         src/Zobrist.c
+        src/Util.h
+        src/Util.c
+        src/Random.h
+        src/Random.c
 )
